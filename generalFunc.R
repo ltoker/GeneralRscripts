@@ -324,3 +324,7 @@ ModelAdj <- function(model, adj=data.frame(effect = "sex", adjValue=0)){
   Final <- rowSums(cbind(fixSum, randSum, resid))
   return(Final)
 }
+
+githubURL <- ("https://github.com/ltoker/MovieColors/blob/main/ColorsJPG/MoviePalettes.Rds")
+download.file(githubURL,"MoviePalettes.Rds", method="curl")
+MoviePallete <- readRDS("MoviePalettes.Rds")
