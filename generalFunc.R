@@ -355,23 +355,25 @@ ChangeFacetLabels <- function(ggPlot, FillCol = NULL, TextCol = NULL){
                                                x = grobs_df$gPath_full)]
   
   n_cols <- length(strip_bg_gpath)
+  
+  
   if(is.null(FillCol)){
-    rep("white", n_cols)
+    fills <- rep("white", n_cols)
   } else {
     fills <- FillCol
   }
   
   if(is.null(TextCol)){
-    rep("black", n_col)
+    txt_colors <- rep("black", n_cols)
   } else {
     txt_colors <- TextCol
     
   }
-  
   # Edit the grobs
   for (i in 1:length(strip_bg_gpath)){
     g <- editGrob(grob = g, gPath = strip_bg_gpath[i], gp = gpar(fill = fills[i]))
     g <- editGrob(grob = g, gPath = strip_txt_gpath[i], gp = gpar(col = txt_colors[i]))
   }
   return(g)
+  
 }
