@@ -38,6 +38,7 @@ packageF("gplots")
 packageF("scales")
 packageF("devtools")
 packageF("tidyr")
+packageF("Hmisc")
 
 select = dplyr::select
 filter = dplyr::filter
@@ -325,6 +326,3 @@ ModelAdj <- function(model, adj=data.frame(effect = "sex", adjValue=0)){
   return(Final)
 }
 
-githubURL <- ("https://github.com/ltoker/MovieColors/blob/main/ColorsJPG/MoviePalettes.Rds")
-download.file(githubURL,"MoviePalettes.Rds", method="curl")
-MoviePallete <- readRDS("MoviePalettes.Rds")
