@@ -328,3 +328,50 @@ ModelAdj <- function(model, adj=data.frame(effect = "sex", adjValue=0)){
 }
 
 source_url("https://github.com/ltoker/MovieColors/blob/main/MovieThemeColorPallete.R?raw=T")
+
+ChangeFacetLabels <- function(ggPlot, FillCol = NULL, TextCol = NULL){
+  
+  # Generate the ggplot2 plot grob
+  g <- grid.force(ggplotGrob(ggPlot))
+  
+  # Get the names of grobs and their gPaths into a data.frame structure
+  grobs_df <- do.call(cbind.data.frame, grid.ls(g, print = FALSE))
+  
+  # Build optimal gPaths that will be later used to identify grobs and edit them
+  grobs_df$gPath_full <- paste(grobs_df$gPath, grobs_df$name, sep = "::")
+  grobs_df$gPath_full <- gsub(pattern = "layout::", 
+                              replacement = "", 
+                              x = grobs_df$gPath_full, 
+                              fixed = TRUE)
+  
+  
+  
+  # Get the gPaths of the strip background grobs
+  strip_bg_gpath <- grobs_df$gPath_full[grepl(pattern = ".*strip\\.background.*", 
+                                              x = grobs_df$gPath_full)]
+  
+  # Get the gPaths of the strip titles
+  strip_txt_gpath <- grobs_df$gPath_full[grepl(pattern = "strip.*titleGrob.*text.*", 
+                                               x = grobs_df$gPath_full)]
+  
+  n_cols <- length(strip_bg_gpath)
+  if(is.null(FillCol)){
+    rep("white", n_cols)
+  } else {
+    fills <- FillCol
+  }
+  
+  if(is.null(TextCol)){
+    rep("black", n_col)
+  } else {
+    txt_colors <- TextCol
+    
+  }
+  
+  # Edit the grobs
+  for (i in 1:length(strip_bg_gpath)){
+    g <- editGrob(grob = g, gPath = strip_bg_gpath[i], gp = gpar(fill = fills[i]))
+    g <- editGrob(grob = g, gPath = strip_txt_gpath[i], gp = gpar(col = txt_colors[i]))
+  }
+  return(g)
+}
