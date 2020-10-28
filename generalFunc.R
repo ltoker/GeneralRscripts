@@ -326,3 +326,4 @@ ModelAdj <- function(model, adj=data.frame(effect = "sex", adjValue=0)){
   return(Final)
 }
 
+source_url("https://github.com/ltoker/MovieColors/blob/main/MovieThemeColorPallete.R?raw=T")
