@@ -37,6 +37,8 @@ packageF("curl")
 packageF("gplots")
 packageF("scales")
 packageF("devtools")
+packageF("tidyr")
+
 select = dplyr::select
 filter = dplyr::filter
 mutate = dplyr::mutate
@@ -44,7 +46,6 @@ mutate = dplyr::mutate
 name2Char <- function(x){
   as.character(substitute(x))
 }
-
 
 GeneSex <- function(aned, Metadata){
   probeM <- aned$Probe[grep("RPS4Y1|KDM5D", aned$GeneSymbol, ignore.case = T)] %>% as.character
@@ -247,6 +248,7 @@ GetAnnoFiles <- function(platform){
   Anno_file <- read.table(paste0(platform, ".gz"), comment="#", header=T, quote='"', sep="\t")
   return(Anno_file)
 }
+
 ScanData <- function(metaVar, scanVar){
   metaVar$ScanDate <- scanVar[match(metaVar$Filename, names(scanVar))]
   return(metaVar)
