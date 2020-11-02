@@ -348,11 +348,11 @@ ChangeFacetLabels <- function(ggPlot, FillCol = NULL, TextCol = NULL){
   
   # Get the gPaths of the strip background grobs
   strip_bg_gpath <- grobs_df$gPath_full[grepl(pattern = ".*strip\\.background.*", 
-                                              x = grobs_df$gPath_full)]
+                                              x = grobs_df$gPath_full)] %>% sort
   
   # Get the gPaths of the strip titles
   strip_txt_gpath <- grobs_df$gPath_full[grepl(pattern = "strip.*titleGrob.*text.*", 
-                                               x = grobs_df$gPath_full)]
+                                               x = grobs_df$gPath_full)] %>% sort
   
   n_cols <- length(strip_bg_gpath)
   
