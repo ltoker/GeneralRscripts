@@ -39,6 +39,7 @@ packageF("scales")
 packageF("devtools")
 packageF("tidyr")
 packageF("Hmisc")
+packageF("data.table")
 packageF("ggpubr")
 
 select = dplyr::select
