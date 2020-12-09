@@ -328,7 +328,7 @@ ModelAdj <- function(model, adj=data.frame(effect = "sex", adjValue=0)){
   return(Final)
 }
 
-#readRDS(url("https://github.com/ltoker/MovieColors/blob/main/MovieThemeColorPallete.R?raw=T")
+MoviePalettes <- readRDS(url("https://github.com/ltoker/MovieColors/raw/main/MoviePalettes.Rds"))
 
 ChangeFacetLabels <- function(ggPlot, FillCol = NULL, TextCol = NULL){
   
