@@ -1,5 +1,5 @@
-source(paste0(GenScriptPath,"graphic_functions.R")) #networks and heatmaps
-source(paste0(GenScriptPath,"correlation_functions.R")) #corrlations and distributions functions
+source_url("https://github.com/ltoker/GeneralRscripts/blob/main/graphic_functions.R?raw=T") #networks and heatmaps
+source_url("https://github.com/ltoker/GeneralRscripts/blob/main/correlation_functions.R?raw=T") #corrlations and distributions functions
 
 OutSamples <- function(data){
   Q1 = data %>% summary %>% .["1st Qu."]
