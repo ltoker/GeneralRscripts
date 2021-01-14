@@ -373,8 +373,8 @@ PreProccessRNAseq <- function(Metadata, expData, sampleCol = NA, SexCol = NULL,
   
   #Define genes above and below noise threshold
   ProbeSum <- apply(expData[,sampleCol], 1, function(x) quantile(x, 0.95) > MaxNoise)
-  ExpHigh <- expData[,sampleCol][ProbeSum,]
-  ExpLow <- expData[,sampleCol][!ProbeSum,]
+  ExpHigh <- expData[ProbeSum,]
+  ExpLow <- expData[!ProbeSum,]
   
   print("Getting the boxplots")
   
