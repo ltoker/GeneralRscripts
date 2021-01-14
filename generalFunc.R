@@ -251,7 +251,7 @@ OutSamples <- function(data){
 
 PreProccessRNAseq <- function(Metadata, expData, sampleCol = NA, SexCol = NULL,
                               Combat = F, resultsPath = NULL){
-  
+  browser()
   Metadata %<>% droplevels()
   
   # Get sample ID column
