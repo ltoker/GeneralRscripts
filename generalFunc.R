@@ -101,7 +101,6 @@ GeneSex <- function(aned, Metadata){
     warning("No sex specific genes on the platform")
   }
 }
-
 closeDev <- function(){
   Dev2close <- dev.list()[names(dev.list()) != "RStudioGD"]
   sapply(Dev2close, function(x) dev.off(x))
@@ -243,20 +242,18 @@ DownloadExpFile <- function(study, path){
 OutSamples <- function(data){
   Q1 = data %>% summary %>% .["1st Qu."]
   Q3 = data %>% summary %>% .["3rd Qu."]
-  IQR = Q3-Q1
+  IQR = 1.5*(Q3-Q1)
   Min = Q1 - IQR
   Max = Q3 + IQR
-  return(names(data)[data < Min])
+  return(which(data < Min))
 }
 
 PreProccessRNAseq <- function(Metadata, expData, sampleCol = NA, SexCol = NULL,
                               Combat = F, resultsPath = NULL){
-  browser()
   Metadata %<>% droplevels()
-  
   # Get sample ID column
   if(is.na(sampleCol)){
-    sampleCol = colnames(expData)[apply(expData, 2, is.numeric)]
+    sampleCol = colnames(expData)[sapply(expData[1,], is.numeric)]
   } else if(is.numeric(sampleCol)){
     sampleCol = colnames(expData)[sampleCol]
   }
@@ -269,48 +266,48 @@ PreProccessRNAseq <- function(Metadata, expData, sampleCol = NA, SexCol = NULL,
   #Remove mislabeled samples
   Fgene <- grep("XIST", expData$GeneSymbol, value=TRUE, ignore.case = T) %>% unique
   Mgene <- grep("KDM5D|RPS4Y1", expData$GeneSymbol, value=TRUE, ignore.case = T)
-
+  
   if(length(c(Fgene, Mgene)) == 0){
-
+    
     print("no sex genes detected, can't detect mislabeled samples")
     useSexGenes = FALSE
-
+    
   } else {
-
+    
     Metadata <- GeneSex(aned = expData, Metadata = Metadata)
-
+    
     if("Gender genes disagree, cannot decide about biological gender" %in% names(warnings())){
-
+      
       print("Can't use Sex genes to determine mislabled samples")
       useSexGenes = FALSE
-
+      
     } else {
-
+      
       useSexGenes = TRUE
       if(!is.null(SexCol)){
-
+        
         Metadata$Sex <- Metadata[,SexCol]
         if(sum(is.na(Metadata$Sex) < nrow(Metadata))){
-
+          
           MisLabelSamp = Metadata %>%
             filter(Sex != BioGender, !is.na(Sex)) %>% .$CommonName
           if(sum(is.na(Metadata$Sex) > 0)){
-
+            
             print(paste0("No sex check for samples: ",
                          Metadata %>%
                            filter(is.na(Sex)) %>% .$CommonName))
-
+            
           }
         } else {
-
+          
           print("No sex metadata, can't check mislabeled samples")
-
+          
         }
       }
     }
   }
   
-
+  
   #Get max signal for noise data based on expression of known non-expressed genes
   if(!useSexGenes){
     
@@ -325,9 +322,9 @@ PreProccessRNAseq <- function(Metadata, expData, sampleCol = NA, SexCol = NULL,
       MaxNoise = 0
       
     }
-
+    
   } else {
-
+    
     if(length(unique(Metadata$Sex)) == 1){
       
       SampleGender = unique(Metadata$Sex)
@@ -341,34 +338,34 @@ PreProccessRNAseq <- function(Metadata, expData, sampleCol = NA, SexCol = NULL,
         print("unidentified sex")
       }
     }
-
+    
     Noise <- sapply(c(Fgene, Mgene), function(gene){
       if(gene %in% Fgene){
         gender = "M"
       } else if (gene %in% Mgene) {
         gender = "F"
       }
-
+      
       #Detect samples with potential quality issues and remove them from noise calculation
       if(length(Fgene) > 0 & length(Mgene) > 0){
         FemaleExp = expData %>% filter(GeneSymbol %in% Fgene) %>% .[sampleCol] %>% apply(2, mean)
         MaleExp = expData %>% filter(GeneSymbol %in% Mgene) %>% .[sampleCol] %>% apply(2, mean)
         SexDiff  = MaleExp - FemaleExp
         RmSample = names(SexDiff)[SexDiff > -3 & SexDiff < 2]
-        GoodSamples = GeneGender %>% filter(BioGender == gender,
-                                            !CommonName %in% RmSample) %>%
+        GoodSamples = Metadata %>% filter(BioGender == gender,
+                                          !CommonName %in% RmSample) %>%
           .$CommonName %>% as.character
-
+        
         if(length(RmSample) > 0){
           print(paste("Suspected data quality in:", paste(RmSample, collapse = ", ")))
         }
       }
-
+      
       temp <- expData %>% filter(GeneSymbol == gene) %>%
-        select(GoodSamples)  %>% unlist
-
+        select(all_of(GoodSamples))  %>% unlist
+      
     })  %>% unlist
-
+    
     MaxNoise <- quantile(Noise, 0.95)
   }
   
@@ -404,22 +401,21 @@ PreProccessRNAseq <- function(Metadata, expData, sampleCol = NA, SexCol = NULL,
                              MedianCor = MedianCorLow,
                              Exp = "LowExp")
   
-  Plot <- ggplot(rbind(MedianCorAll, CorSamplesHigh, CorSamplesLow), aes(SampleID, MedianCor)) +
+  Plot <- ggplot(rbind(MedianCorAll, MedianCorHigh, MedianCorLow), aes(SampleID, MedianCor)) +
     geom_boxplot() +
     facet_wrap(~Exp, scales = "free")
   
   if(nrow(ExpLow) !=0){
-    OutlierLow <- OutSamples(MedianCorLow)
+    OutlierLow <- MedianCorLow$SampleID[OutSamples(MedianCorLow$MedianCor)]
   } else {
     OutlierLow <- NULL
   }
   
-  OutlierHigh <- OutSamples(MedianCorHigh)
+  OutlierHigh <- MedianCorHigh$SampleID[OutSamples(MedianCorHigh$MedianCor)]
   
-  OutlierAll <- OutSamples(MedianCorAll)
+  OutlierAll <- MedianCorAll$SampleID[OutSamples(MedianCorAll$MedianCor)]
   
   return(list(Metadata = Metadata, Mislabeled = MisLabelSamp,
-              BadQuqlity = RmSample,
               NoiseThreshold = MaxNoise,
               ExpAll = expData, ExpHigh = ExpHigh, ExpLow = ExpLow,
               OutlierAll = OutlierAll, OutlierHigh = OutlierHigh, OutlierLow = OutlierLow,
