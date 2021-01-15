@@ -25,7 +25,7 @@ correct_sign <- function(Celltype, object){
 }
 
 
-PCA_genes_All_based <- function(dataset_id, dataset, CellType_genes, NoiseThershold, contName = "Cont"){ 
+PCA_genes_All_based <- function(dataset_id, dataset, CellType_genes, NoiseThershold, contName, SampleReg){ 
   print("########################################")
   print("##### Scales based on all samples ####")
   print("########################################")
@@ -42,16 +42,16 @@ PCA_genes_All_based <- function(dataset_id, dataset, CellType_genes, NoiseThersh
   for(i in 1:c(length(names(CellType_genes)))){
     #print(names(CellType_genes)[i])
     data <- dataset[dataset$GeneSymbol %in% CellType_genes[[i]],]
-    #Remove genes with expression level bellow the noise threshold in 95% of control samples. Ths step is done to ensure that the marker genes can be detected in human bulk tissue
+    #Remove genes with expression level bellow the noise threshold in 95% of control samples. This step is done to ensure that the marker genes can be detected in human bulk tissue
     geneContExp <- apply(data %>% select(matches(contName)), 1, function(x) quantile(x, 0.05))
     data <- data[geneContExp > NoiseThershold,]
-
+    
     if(nrow(data) > 2){
       PCAresults$ControlOnly[[i]] <- data %>%
         select(matches(contName)) %>% t %>% prcomp(scale=T) #The assumption here is that there is a control group
       rownames(PCAresults$ControlOnly[[i]]$rotation) <- data$GeneSymbol
       PCAresults$ControlOnly[[i]] <- correct_sign(names(CellType_genes)[i], PCAresults$ControlOnly[[i]])
-      PCAresults$All[[i]] <- data %>% select(matches("_|GSM")) %>% t %>% prcomp(scale=TRUE) 
+      PCAresults$All[[i]] <- data %>% select(matches(SampleReg)) %>% t %>% prcomp(scale=TRUE) 
       PCAresults$All[[i]] <- correct_sign(names(CellType_genes)[i], PCAresults$All[[i]])
       rownames(PCAresults$All[[i]]$rotation) <- data$GeneSymbol
       while (sum(PCAresults$All[[i]]$rotation[,1] > 0) < nrow(PCAresults$All[[i]]$rotation)){
@@ -62,14 +62,15 @@ PCA_genes_All_based <- function(dataset_id, dataset, CellType_genes, NoiseThersh
         data %<>% filter(!GeneSymbol %in% minorGene)
         if(nrow(data) > 2){
           rownames(data) <- data$GeneSymbol
-          PCAresults$All[[i]] <- data %>% select(matches("_|GSM")) %>% t %>% prcomp(scale=TRUE) 
+          PCAresults$All[[i]] <- data %>% select(matches(SampleReg)) %>% t %>% prcomp(scale=TRUE) 
           PCAresults$All[[i]] <- correct_sign(names(CellType_genes)[i], PCAresults$All[[i]])
         } else {
           print(paste("Looki here!!!", names(CellType_genes)[i], "has less than 3 genes after sign exclusion"))
-          x <- matrix(nrow = c(sum(grepl("_|GSM", names(data)))), ncol=1)
+          x <- matrix(nrow = c(sum(grepl(SampleReg, names(data)))), ncol=1)
           rownames(x) <- names(dataset)[sapply(groups, function(grp){
             eval(as.name(grp))
-          }) %>% unlist] ;colnames(x)="x"
+          }) %>% unlist]
+          colnames(x)="x"
           PCAresults$ControlOnly[[i]] <- list(x)
           names(PCAresults$ControlOnly[[i]]) <- "x"
           PCAresults$All[[i]] <- list(x)
@@ -87,10 +88,11 @@ PCA_genes_All_based <- function(dataset_id, dataset, CellType_genes, NoiseThersh
       
     } else {
       print(paste("Looki here!!! No genes for", names(CellType_genes)[i]))
-      x <- matrix(nrow = c(sum(grepl("_|GSM", names(data)))), ncol=1)
+      x <- matrix(nrow = c(sum(grepl(SampleReg, names(data)))), ncol=1)
       rownames(x) <- names(dataset)[sapply(groups, function(grp){
         eval(as.name(grp))
-      }) %>% unlist] ;colnames(x)="x"
+      }) %>% unlist]
+      colnames(x)="x"
       PCAresults$ControlOnly[[i]] <- list(x)
       names(PCAresults$ControlOnly[[i]]) <- "x"
       PCAresults$All[[i]] <- list(x)
@@ -105,7 +107,6 @@ PCA_genes_All_based <- function(dataset_id, dataset, CellType_genes, NoiseThersh
   }
   return(PCAresults)
 }
-
 
 PlotPCggplot <- function(data, grpVar = "Profile", CellVar=NULL, 
                          CellExtend = "_Genes", CellName = NULL,
