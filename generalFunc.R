@@ -262,71 +262,73 @@ GetGenomeAnno_UCSC <- function(annots = c('_basicgenes', '_genes_intergenic','_g
   return(annoFileCollapsed)
 }
 
-GetGenomeAnno_GENCODE <- function(GTF_file, txdb = txdb){
+GGetGenomeAnno_GENCODE <- function(GTF_file, txdb = txdb){
   AnnoData <- rtracklayer::import.gff3(GTF_file) %>%
-    data.frame() 
-  #Get promoter regions (one per transcrip)
-  PromoterData <- promoters((txdb), upstream = 1000, downstream = 0) %>%
-    data.frame() %>% mutate(exon_name = NA, region_type = "Promoters") %>% select(-tx_id)
-  
-  Up5KBData <- promoters(txdb, upstream = 5000, downstream = 0) %>%
-    data.frame() %>% mutate(exon_name = NA, region_type = "Up1to5Kb") %>% select(-tx_id)
-  
-  
-  Up5KBData %<>% mutate(end = end - 1000,
-                        width = width -1000)
-  
-  
-  temp <- rbind(PromoterData, Up5KBData)
-  CombinedAnnoA <- merge(AnnoData %>% select(ID, gene_id, gene_type, gene_name), temp,
-                         by.x = "ID", by.y = "tx_name")
-  
-  #Get introgenic regions
-  exbygene <- exonsBy(txdb, "gene")
-  intergenicRegions <- gaps(unlist(range(exbygene))) %>% data.frame() %>% mutate(exon_name  = NA,
-                                                                                 region_type = "intergenic")
-  
-  intergenicRegions <- cbind(data.frame(ID = NA,
-                                        gene_id = NA,
-                                        gene_type = NA,
-                                        gene_name = NA),
-                             intergenicRegions)
-  #Get intronic and exonic region
-  IntronData <- intronsByTranscript(txdb, use.names=TRUE) %>%
-    data.frame() %>% select(-group) %>% mutate(exon_name = NA, region_type = "Introns")
-  
-  ExonData <- exonsBy(txdb, by=c("tx"), use.names=TRUE) %>%
-    data.frame() %>% select(-group, -exon_id, -exon_rank) %>% mutate(region_type = "Exons")
-  
-  
-  #Get 5'UTR and 3'UTR
-  
-  UTR5Data <- fiveUTRsByTranscript(txdb, use.names=T) %>% 
-    data.frame() %>% select(-group, -exon_id, -exon_rank) %>% mutate(region_type = "5UTR")
-  
-  UTR3Data <- threeUTRsByTranscript(txdb, use.names=T) %>% 
-    data.frame() %>% select(-group, -exon_id, -exon_rank) %>% mutate(region_type = "3UTR")
-  
-  
-  temp2 <- rbind(IntronData, ExonData, UTR5Data, UTR3Data)
-  
-  CombinedAnnoB <- merge(AnnoData %>% select(ID, gene_id, gene_type, gene_name),
-                         temp2, by.x = "ID", by.y = "group_name")
-  
-  
-  CombinedAnno <- rbind(CombinedAnnoA, CombinedAnnoB, intergenicRegions)
-  names(CombinedAnno)[names(CombinedAnno) %in% c("ID", "gene_name")] <- c("txt_id", "symbol")
-  
-  rm(temp, temp2)
-  
-  CombinedAnno %>%
-    mutate(UniqueRegion =  paste0(seqnames, ":", start, "-", end),
-           UniqueRegionGene = paste(UniqueRegion, symbol, sep = "_"),
-           UniqueRegionGeneType = paste(UniqueRegionGene, region_type, sep = "_"),
-           GeneAnnoType = paste(symbol, region_type, sep = "_")) %>%
-    filter(!duplicated(UniqueRegionGeneType)) %>% as(., "GRanges")
-  
+    data.frame()  %>% filter(type == "transcript") %>%
+    
+    #Get promoter regions (one per transcrip)
+    PromoterData <- promoters((txdb), upstream = 1000, downstream = 0) %>%
+      data.frame() %>% mutate(exon_name = NA, region_type = "Promoters") %>% select(-tx_id)
+    
+    Up5KBData <- promoters(txdb, upstream = 5000, downstream = 0) %>%
+      data.frame() %>% mutate(exon_name = NA, region_type = "Up1to5Kb") %>% select(-tx_id)
+    
+    
+    Up5KBData %<>% mutate(end = end - 1000,
+                          width = width -1000)
+    
+    
+    temp <- rbind(PromoterData, Up5KBData)
+    CombinedAnnoA <- merge(AnnoData %>% select(transcript_id, gene_id, gene_type, gene_name), temp,
+                           by.x = "transcript_id", by.y = "tx_name")
+    
+    #Get introgenic regions
+    exbygene <- exonsBy(txdb, "gene")
+    intergenicRegions <- gaps(unlist(range(exbygene))) %>% data.frame() %>% mutate(exon_name  = NA,
+                                                                                   region_type = "intergenic")
+    
+    intergenicRegions <- cbind(data.frame(transcript_id = NA,
+                                          gene_id = NA,
+                                          gene_type = NA,
+                                          gene_name = NA),
+                               intergenicRegions)
+    #Get intronic and exonic region
+    IntronData <- intronsByTranscript(txdb, use.names=TRUE) %>%
+      data.frame() %>% select(-group) %>% mutate(exon_name = NA, region_type = "Introns")
+    
+    ExonData <- exonsBy(txdb, by=c("tx"), use.names=TRUE) %>%
+      data.frame() %>% select(-group, -exon_id, -exon_rank) %>% mutate(region_type = "Exons")
+    
+    
+    #Get 5'UTR and 3'UTR
+    
+    UTR5Data <- fiveUTRsByTranscript(txdb, use.names=T) %>% 
+      data.frame() %>% select(-group, -exon_id, -exon_rank) %>% mutate(region_type = "5UTR")
+    
+    UTR3Data <- threeUTRsByTranscript(txdb, use.names=T) %>% 
+      data.frame() %>% select(-group, -exon_id, -exon_rank) %>% mutate(region_type = "3UTR")
+    
+    
+    temp2 <- rbind(IntronData, ExonData, UTR5Data, UTR3Data)
+    
+    CombinedAnnoB <- merge(AnnoData %>% select(transcript_id, gene_id, gene_type, gene_name),
+                           temp2, by.x = "transcript_id", by.y = "group_name")
+    
+    
+    CombinedAnno <- rbind(CombinedAnnoA, CombinedAnnoB, intergenicRegions)
+    names(CombinedAnno)[names(CombinedAnno) %in% c("transcript_id", "gene_name")] <- c("txt_id", "symbol")
+    
+    rm(temp, temp2)
+    
+    CombinedAnno %>%
+      mutate(UniqueRegion =  paste0(seqnames, ":", start, "-", end),
+             UniqueRegionGene = paste(UniqueRegion, symbol, sep = "_"),
+             UniqueRegionGeneType = paste(UniqueRegionGene, region_type, sep = "_"),
+             GeneAnnoType = paste(symbol, region_type, sep = "_")) %>%
+      filter(!duplicated(UniqueRegionGeneType)) %>% as(., "GRanges")
+    
 }
+
 
 
 OutSamples <- function(data){
