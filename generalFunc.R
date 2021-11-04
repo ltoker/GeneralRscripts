@@ -16,7 +16,6 @@ packageF <- function(package){
   }
 }
 
-packageF("data.table")
 packageF("scales")
 packageF("memoise")
 packageF("sva")
